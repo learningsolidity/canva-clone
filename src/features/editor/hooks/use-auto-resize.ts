@@ -21,7 +21,10 @@ export const useAutoResize = ({ canvas, container }: UseAutoResizeProps) => {
     const zoomRatio = 0.85;
     const localWorkspace = canvas
       .getObjects()
-      .find((object) => object.name === "clip");
+      .find((object) => object.name === "page-0");
+
+    // Return early if no workspace found
+    if (!localWorkspace) return;
 
     // @ts-ignore
     const scale = fabric.util.findScaleToFit(localWorkspace, {
@@ -33,8 +36,6 @@ export const useAutoResize = ({ canvas, container }: UseAutoResizeProps) => {
 
     canvas.setViewportTransform(fabric.iMatrix.concat());
     canvas.zoomToPoint(new fabric.Point(center.left, center.top), zoom);
-
-    if (!localWorkspace) return;
 
     const workspaceCenter = localWorkspace.getCenterPoint();
     const viewportTransform = canvas.viewportTransform;
@@ -53,10 +54,7 @@ export const useAutoResize = ({ canvas, container }: UseAutoResizeProps) => {
 
     canvas.setViewportTransform(viewportTransform);
 
-    localWorkspace.clone((cloned: fabric.Rect) => {
-      canvas.clipPath = cloned;
-      canvas.requestRenderAll();
-    });
+    canvas.requestRenderAll();
   }, [canvas, container]);
 
   useEffect(() => {

@@ -32,6 +32,7 @@ import { useAutoResize } from "@/features/editor/hooks/use-auto-resize";
 import { useCanvasEvents } from "@/features/editor/hooks/use-canvas-events";
 import { useWindowEvents } from "@/features/editor/hooks/use-window-events";
 import { useLoadState } from "@/features/editor/hooks/use-load-state";
+import { useCanvasWheel } from "@/features/editor/hooks/use-canvas-wheel";
 
 const buildEditor = ({
   save,
@@ -120,12 +121,142 @@ const buildEditor = ({
   const getWorkspace = () => {
     return canvas
     .getObjects()
-    .find((object) => object.name === "clip");
+    .find((object) => object.name === "page-0");
+  };
+
+  const getPages = (): fabric.Rect[] => {
+    return canvas
+      .getObjects()
+      .filter((object) => object.name && object.name.startsWith("page-")) as fabric.Rect[];
+  };
+
+  const getCurrentPage = (): number => {
+    // For now, determine current page based on viewport position
+    const vpt = canvas.viewportTransform;
+    if (!vpt) return 0;
+    
+    const pages = getPages();
+    const currentY = -vpt[5] / canvas.getZoom();
+    
+    for (let i = 0; i < pages.length; i++) {
+      const page = pages[i];
+      if (currentY >= page.top! - 50 && currentY <= page.top! + page.height! + 50) {
+        return i;
+      }
+    }
+    return 0;
+  };
+
+  const scrollToPage = (pageIndex: number) => {
+    const pages = getPages();
+    if (pageIndex < 0 || pageIndex >= pages.length) return;
+    
+    const targetPage = pages[pageIndex];
+    if (!targetPage) return;
+    
+    const zoom = canvas.getZoom();
+    const viewportTransform = canvas.viewportTransform;
+    if (!viewportTransform) return;
+    
+    // Calculate target position to center the page
+    const targetY = targetPage.top! + targetPage.height! / 2;
+    const canvasHeight = canvas.getHeight();
+    const targetVpt5 = -(targetY * zoom - canvasHeight / 2);
+    
+    // Animate scroll
+    const startVpt5 = viewportTransform[5];
+    const distance = targetVpt5 - startVpt5;
+    const duration = 500; // ms
+    const startTime = Date.now();
+    
+    const animate = () => {
+      const currentTime = Date.now();
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      
+      // Easing function (ease-in-out)
+      const easeProgress = progress < 0.5
+        ? 2 * progress * progress
+        : -1 + (4 - 2 * progress) * progress;
+      
+      viewportTransform[5] = startVpt5 + distance * easeProgress;
+      canvas.requestRenderAll();
+      
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      }
+    };
+    
+    requestAnimationFrame(animate);
+  };
+
+  const addPage = () => {
+    const pages = getPages();
+    const lastPage = pages[pages.length - 1];
+    
+    // Get dimensions from the first page (all pages should have the same size)
+    const firstPage = pages[0] || getWorkspace();
+    const width = firstPage?.width || 900;
+    const height = firstPage?.height || 1200;
+    
+    // Calculate position for new page (below last page with gap)
+    const gap = 100;
+    const top = lastPage ? (lastPage.top! + lastPage.height! + gap) : height + gap;
+    
+    // Create new page as a visible rectangle
+    const newPage = new fabric.Rect({
+      width: width,
+      height: height,
+      name: `page-${pages.length}`,
+      fill: "white",
+      selectable: false,
+      hasControls: false,
+      evented: false,
+      shadow: new fabric.Shadow({
+        color: "rgba(0,0,0,0.1)",
+        blur: 10,
+        offsetX: 0,
+        offsetY: 2,
+      }),
+      left: firstPage?.left || (canvas.width! / 2 - width / 2),
+      top: top,
+    });
+    
+    canvas.add(newPage);
+    
+    // Ensure pages stay at the back in order
+    const sortedPages = [...pages, newPage].sort((a, b) => {
+      const aIndex = parseInt(a.name!.split('-')[1]);
+      const bIndex = parseInt(b.name!.split('-')[1]);
+      return aIndex - bIndex;
+    });
+    
+    sortedPages.forEach(page => {
+      canvas.sendToBack(page);
+    });
+    
+    // Scroll to the new page
+    setTimeout(() => scrollToPage(pages.length), 100);
+    
+    save();
   };
 
   const center = (object: fabric.Object) => {
-    const workspace = getWorkspace();
-    const center = workspace?.getCenterPoint();
+    // Find the current page based on object position or use first page
+    const pages = getPages();
+    let targetPage = pages[0];
+    
+    // If object has a position, find the appropriate page
+    if (object.top !== undefined) {
+      for (const page of pages) {
+        if (object.top >= page.top! && object.top <= page.top! + page.height!) {
+          targetPage = page;
+          break;
+        }
+      }
+    }
+    
+    const center = targetPage?.getCenterPoint();
 
     if (!center) return;
 
@@ -607,6 +738,10 @@ const buildEditor = ({
       return value;
     },
     selectedObjects,
+    addPage,
+    getPages,
+    getCurrentPage,
+    scrollToPage,
   };
 };
 
@@ -677,6 +812,10 @@ export const useEditor = ({
     setHistoryIndex,
   });
 
+  useCanvasWheel({
+    canvas,
+  });
+
   const editor = useMemo(() => {
     if (canvas) {
       return buildEditor({
@@ -744,13 +883,16 @@ export const useEditor = ({
       const initialWorkspace = new fabric.Rect({
         width: initialWidth.current,
         height: initialHeight.current,
-        name: "clip",
+        name: "page-0",
         fill: "white",
         selectable: false,
         hasControls: false,
+        evented: false,
         shadow: new fabric.Shadow({
-          color: "rgba(0,0,0,0.8)",
-          blur: 5,
+          color: "rgba(0,0,0,0.1)",
+          blur: 10,
+          offsetX: 0,
+          offsetY: 2,
         }),
       });
 
@@ -759,7 +901,6 @@ export const useEditor = ({
 
       initialCanvas.add(initialWorkspace);
       initialCanvas.centerObject(initialWorkspace);
-      initialCanvas.clipPath = initialWorkspace;
 
       setCanvas(initialCanvas);
       setContainer(initialContainer);

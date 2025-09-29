@@ -201,6 +201,7 @@ export const Editor = ({ initialData }: EditorProps) => {
             <Button 
               variant="outline"
               className="w-full max-w-[800px] h-10 gap-2"
+              onClick={() => editor?.addPage()}
             >
               <Plus className="size-4" />
               Add page

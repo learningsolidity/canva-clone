@@ -261,4 +261,8 @@ export interface Editor {
   getActiveStrokeWidth: () => number;
   getActiveStrokeDashArray: () => number[];
   selectedObjects: fabric.Object[];
+  addPage: () => void;
+  getPages: () => fabric.Rect[];
+  getCurrentPage: () => number;
+  scrollToPage: (pageIndex: number) => void;
 };

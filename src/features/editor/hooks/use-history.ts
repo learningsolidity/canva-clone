@@ -38,7 +38,7 @@ export const useHistory = ({ canvas, saveCallback }: UseHistoryProps) => {
 
     const workspace = canvas
       .getObjects()
-      .find((object) => object.name === "clip");
+      .find((object) => object.name === "page-0");
     const height = workspace?.height || 0;
     const width = workspace?.width || 0;
 
