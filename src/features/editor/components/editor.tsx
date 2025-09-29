@@ -2,11 +2,13 @@
 
 import { fabric } from "fabric";
 import debounce from "lodash.debounce";
+import { Plus } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { ResponseType } from "@/features/projects/api/use-get-project";
 import { useUpdateProject } from "@/features/projects/api/use-update-project";
 
+import { Button } from "@/components/ui/button";
 import { 
   ActiveTool, 
   selectionDependentTools
@@ -194,6 +196,15 @@ export const Editor = ({ initialData }: EditorProps) => {
           />
           <div className="flex-1 h-[calc(100%-124px)] bg-muted" ref={containerRef}>
             <canvas ref={canvasRef} />
+          </div>
+          <div className="w-full px-4 py-3 bg-muted flex justify-center">
+            <Button 
+              variant="outline"
+              className="w-full max-w-[800px] h-10 gap-2"
+            >
+              <Plus className="size-4" />
+              Add page
+            </Button>
           </div>
           <Footer editor={editor} />
         </main>
