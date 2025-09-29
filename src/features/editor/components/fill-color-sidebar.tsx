@@ -30,7 +30,7 @@ export const FillColorSidebar = ({
   return (
     <aside
       className={cn(
-        "bg-white relative border-r z-[40] w-[360px] h-full flex flex-col",
+        "bg-background relative border-r z-[40] w-[360px] h-full flex flex-col",
         activeTool === "fill" ? "visible" : "hidden",
       )}
     >

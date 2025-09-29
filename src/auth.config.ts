@@ -3,8 +3,9 @@ import bcrypt from "bcryptjs";
 import type { NextAuthConfig } from "next-auth";
 import { eq } from "drizzle-orm";
 import { JWT } from "next-auth/jwt";
-import GitHub from "next-auth/providers/github";
-import Google from "next-auth/providers/google";
+// OAuth providers disabled for testing
+// import GitHub from "next-auth/providers/github";
+// import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 
@@ -67,9 +68,10 @@ export default {
 
         return user;
       },
-    }), 
-    GitHub, 
-    Google
+    })
+    // OAuth providers disabled for testing
+    // GitHub, 
+    // Google
   ],
   pages: {
     signIn: "/sign-in",

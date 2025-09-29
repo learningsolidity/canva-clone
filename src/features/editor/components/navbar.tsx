@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 
 import { UserButton } from "@/features/auth/components/user-button";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 import { ActiveTool, Editor } from "@/features/editor/types";
 import { Logo } from "@/features/editor/components/logo";
@@ -101,7 +102,7 @@ export const Navbar = ({
             variant="ghost"
             size="icon"
             onClick={() => onChangeActiveTool("select")}
-            className={cn(activeTool === "select" && "bg-gray-100")}
+            className={cn(activeTool === "select" && "bg-muted")}
           >
             <MousePointerClick className="size-4" />
           </Button>
@@ -210,6 +211,7 @@ export const Navbar = ({
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          <ThemeToggle />
           <UserButton />
         </div>
       </div>

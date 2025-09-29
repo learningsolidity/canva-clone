@@ -17,6 +17,11 @@ const app = new Hono()
       return c.json({ error: "Unauthorized" }, 401);
     }
 
+    // Mock mode when Stripe is not configured
+    if (!process.env.STRIPE_SECRET_KEY) {
+      return c.json({ error: "Billing system not configured" }, 503);
+    }
+
     const [subscription] = await db
       .select()
       .from(subscriptions)
@@ -52,9 +57,11 @@ const app = new Hono()
     const active = checkIsActive(subscription);
 
     return c.json({
-      data: {
+      data: subscription ? {
         ...subscription,
         active,
+      } : {
+        active: false,
       },
     });
   })
@@ -63,6 +70,11 @@ const app = new Hono()
 
     if (!auth.token?.id) {
       return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    // Mock mode when Stripe is not configured
+    if (!process.env.STRIPE_SECRET_KEY || !process.env.STRIPE_PRICE_ID) {
+      return c.json({ error: "Payment system not configured" }, 503);
     }
 
     const session = await stripe.checkout.sessions.create({
